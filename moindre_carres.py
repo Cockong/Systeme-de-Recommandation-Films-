@@ -10,6 +10,8 @@ import numpy as np
 import matplotlib as plt
 import pylab as pl
 import random
+import time
+
 
 def open_numeric(baseFileName, fieldnames=['user','movie','rating','datestamp'], delimiter='\t'):
     """
@@ -211,5 +213,31 @@ for i in range(Y.shape[0]):
     for j in range(Y.shape[1]):
         if Y[i][j]==0:
             Y[i][j]=1
+
+
+# exemple utilisation temps
+            
+start = time.perf_counter() # first timestamp
+
+# we place here the code we want to time
+k=[None for i in range(1000000000)]
+
+end = time.perf_counter() # second timestamp
+
+elapsed = end - start
+print("elapsed time = {:.12f} seconds".format(elapsed))
+
+start = time.perf_counter() # first timestamp
+
+
+k=[]
+for i in range(1000000000):
+    k.append(None)
+    
+end = time.perf_counter() # second timestamp
+
+elapsed = end - start
+print("elapsed time = {:.12f} seconds".format(elapsed))
+
 
 """   
