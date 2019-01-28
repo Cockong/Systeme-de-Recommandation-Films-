@@ -31,6 +31,16 @@ def open_file(baseFileName, fieldnames=None , delimiter='|'):
          reader = csv.DictReader(f, delimiter = delimiter,fieldnames=fieldnames)
          return list(reader)
 
+def time_elapsed(a,**kwds):
+    """
+    retourne le temps d'exécution d'une fonction et son return
+    """
+    start = time.perf_counter() # first timestamp
+    r=a(**kwds)
+    end = time.perf_counter() # second timestamp
+    return (r,end-start)
+
+
 def calcul_MAE(Rtest, matrice_prediction):
     """
     Calcule la MAE pour une matrice de prédiction
@@ -46,9 +56,9 @@ def calcul_MAE(Rtest, matrice_prediction):
     return(np.mean(np.abs(errorRating)))
 
 def resolution_equa_normale(A,b):
-    #methode pour inverser dapres le cours
-
-
+    """
+    methode pour inverser dapres le cours
+    """
     AT = A.T
     z = A.T.dot(b)
     Inv = np.linalg.inv(AT.dot(A))
@@ -82,7 +92,7 @@ for row in testUserItem:
     Rtest[row['user']-1,row['movie']-1] = row['rating']
 #pl.imshow(R,interpolation='none')
 
-def prediction_moindrecarre(R, W, Rtest, nbrIter = 15 ,nbrFeatures = 1 ,lmbd = 0.1, ):
+def prediction_moindrecarre(R, W, Rtest, nbrIter = 2 ,nbrFeatures = 1 ,lmbd = 0.01):
     """    
     nbrIter =  nombre d'iterations
     nbrFeatures = k
@@ -121,7 +131,10 @@ def prediction_moindrecarre(R, W, Rtest, nbrIter = 15 ,nbrFeatures = 1 ,lmbd = 0
             b = Y.dot(Wu).dot(R[u].T)
             #attention cest X[u].T quon a calculé je ne sais i ca pose probleme
             #X[u]=np.linalg.solve(A,b) # ne fonctionne que si A inversible cequi nest pas notre cas
-            X[u]=resolution_equa_normale(A,b) # ne fonctionne que si A inversible cequi nest pas notre cas
+            #X[u]=resolution_equa_normale(A,b) # ne fonctionne que si A inversible cequi nest pas notre cas
+            X[u],tempsmamethode=time_elapsed(resolution_equa_normale,A=A,b=b)
+            X[u],tempslinalg=time_elapsed(  np.linalg.solve,  a=A,    b=b)#bug
+            print(tempsmamethode,tempslinalg)
 
     
         for i in range(n):
@@ -136,8 +149,14 @@ def prediction_moindrecarre(R, W, Rtest, nbrIter = 15 ,nbrFeatures = 1 ,lmbd = 0
         score.append(calcul_MAE(Rtest, P))
         
     return score
-        
+
+
+       
 score=prediction_moindrecarre(R,W,Rtest)
+
+
+
+
 """
 #approximation de X et Y par la moyenne
 #fonctionne moins bien meilleur départ mais cnvergence moins bonne HYPOTHESE (nameliore rien)=> apparemment il ya des 0 dans Y : des films nont pas été notés !!! je vais essayer de remplacer ces zeros par des 1
@@ -220,24 +239,13 @@ for i in range(Y.shape[0]):
 start = time.perf_counter() # first timestamp
 
 # we place here the code we want to time
-k=[None for i in range(1000000000)]
 
 end = time.perf_counter() # second timestamp
 
 elapsed = end - start
 print("elapsed time = {:.12f} seconds".format(elapsed))
 
-start = time.perf_counter() # first timestamp
 
-
-k=[]
-for i in range(1000000000):
-    k.append(None)
-    
-end = time.perf_counter() # second timestamp
-
-elapsed = end - start
-print("elapsed time = {:.12f} seconds".format(elapsed))
 
 
 """   
