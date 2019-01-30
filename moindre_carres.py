@@ -31,12 +31,12 @@ def open_file(baseFileName, fieldnames=None , delimiter='|'):
          reader = csv.DictReader(f, delimiter = delimiter,fieldnames=fieldnames)
          return list(reader)
 
-def time_elapsed(a,**kwds):
+def time_elapsed(a,*args,**kwds):
     """
     retourne le temps d'exécution d'une fonction et son return
     """
     start = time.perf_counter() # first timestamp
-    r=a(**kwds)
+    r=a(*args,**kwds)
     end = time.perf_counter() # second timestamp
     return (r,end-start)
 
@@ -59,8 +59,8 @@ def resolution_equa_normale(A,b):
     """
     methode pour inverser dapres le cours
     """
-    AT = A.T
-    z = A.T.dot(b)
+    AT=A.T
+    z = AT.dot(b)
     Inv = np.linalg.inv(AT.dot(A))
     return Inv.dot(z) # ne fonctionne que si A inversible cequi nest pas notre cas
 
@@ -91,8 +91,19 @@ for row in baseUserItem:
 for row in testUserItem:
     Rtest[row['user']-1,row['movie']-1] = row['rating']
 #pl.imshow(R,interpolation='none')
+    
+mean_items=[0 for row in range(NbItems)] #liste des moyenne par colonne(film)
+for col in range(NbItems):
+   rating_number=0 #savoir le nombre d'éléments quon additionne pour diviser la moyenne 
+   for user_rating in R[:,col]:
+       if user_rating!=0: # on ne prend que les valeurs non nul
+           mean_items[col]+=user_rating
+           rating_number+=1
+   if rating_number!=0: #il doit y avoir au moins une note par film
+       mean_items[col]=mean_items[col]/rating_number 
 
-def prediction_moindrecarre(R, W, Rtest, nbrIter = 2 ,nbrFeatures = 1 ,lmbd = 0.01):
+
+def prediction_moindrecarre(R, W, Rtest, nbrIter = 10 ,nbrFeatures = 1 ,lmbd = 0.01, mean_items=None):
     """    
     nbrIter =  nombre d'iterations
     nbrFeatures = k
@@ -102,26 +113,21 @@ def prediction_moindrecarre(R, W, Rtest, nbrIter = 2 ,nbrFeatures = 1 ,lmbd = 0.
     m=R.shape[0]
     n=R.shape[1]
     X = np.ones( (m, nbrFeatures) ) # matrice initiale X
-    Y = np.ones( (nbrFeatures, n ) ) # matrice initiale Y
+    #Y = np.ones( (nbrFeatures, n ) ) # matrice initiale Y
     #X = np.random.rand( m, nbrFeatures ) # matrice initiale X
     #Y = np.random.rand( nbrFeatures, n ) # matrice initiale Y
     #X2 = np.ones( (m, nbrFeatures) )
     
     Ik = np.eye( nbrFeatures )
     alpha= lmbd * Ik # éviter de recalculer
-    mean_items=[0 for row in range(NbItems)] #liste des moyenne par colonne(film)
-    for col in range(NbItems):
-       rating_number=0 #savoir le nombre d'éléments quon additionne pour diviser la moyenne 
-       for user_rating in R[:,col]:
-           if user_rating!=0: # on ne prend que les valeurs non nul
-               mean_items[col]+=user_rating
-               rating_number+=1
-       if rating_number!=0: #il doit y avoir au moins une note par film
-           mean_items[col]=mean_items[col]/rating_number 
-    
-    Y=np.array([mean_items for k in range(nbrFeatures)]) #approximer par la moyenne
 
-          
+    if mean_items==None:
+        Y = np.random.rand( nbrFeatures, n ) # matrice initiale Y  
+    elif mean_items==1 :
+        Y = np.ones( (nbrFeatures, n ) ) # matrice initiale Y
+    else : 
+        Y=np.array([mean_items for k in range(nbrFeatures)]) #approximer par la moyenne
+
 
     for j in range(nbrIter):
         
@@ -130,11 +136,13 @@ def prediction_moindrecarre(R, W, Rtest, nbrIter = 2 ,nbrFeatures = 1 ,lmbd = 0.
             A = Y.dot(Wu).dot(Y.T) + alpha
             b = Y.dot(Wu).dot(R[u].T)
             #attention cest X[u].T quon a calculé je ne sais i ca pose probleme
-            #X[u]=np.linalg.solve(A,b) # ne fonctionne que si A inversible cequi nest pas notre cas
+            X[u]=np.linalg.solve(A,b) # ne fonctionne que si A inversible cequi nest pas notre cas
             #X[u]=resolution_equa_normale(A,b) # ne fonctionne que si A inversible cequi nest pas notre cas
-            X[u],tempsmamethode=time_elapsed(resolution_equa_normale,A=A,b=b)
-            X[u],tempslinalg=time_elapsed(  np.linalg.solve,  a=A,    b=b)#bug
-            print(tempsmamethode,tempslinalg)
+            #X[u],tempsmamethode=time_elapsed(resolution_equa_normale,A,b)
+            #print(X[u])
+            #X[u],tempslinalg=time_elapsed(  np.linalg.solve,A,b)#bugnp.linalg.inv(AT.dot(A))
+            #print(X[u])
+            #print("temps de ma méthode : ",tempsmamethode,"temps de linalg : ", tempslinalg)
 
     
         for i in range(n):
@@ -150,12 +158,23 @@ def prediction_moindrecarre(R, W, Rtest, nbrIter = 2 ,nbrFeatures = 1 ,lmbd = 0.
         
     return score
 
-
-       
-score=prediction_moindrecarre(R,W,Rtest)
-
-
-
+score=[]
+for l in range(1,10) :   
+    lmbd=l*0.01
+    print(lmbd)
+    print("approximation moyenne")
+    newscore1,temps=time_elapsed(prediction_moindrecarre,R,W,Rtest,lmbd = lmbd,mean_items=mean_items)
+    print(temps)
+    print(newscore1[9])
+    print("approximation 1")
+    newscore2,temps=time_elapsed(prediction_moindrecarre,R,W,Rtest,lmbd = lmbd,mean_items=1)
+    print(temps)
+    print(newscore2[9])
+    print("approximation random")
+    newscore3,temps=time_elapsed(prediction_moindrecarre,R,W,Rtest,lmbd = lmbd)
+    print(temps)
+    print(newscore3[9])        
+    score.append((newscore1,newscore2,newscore3))
 
 """
 #approximation de X et Y par la moyenne
