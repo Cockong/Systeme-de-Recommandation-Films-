@@ -80,8 +80,7 @@ User=open_file("u.user", fieldnames=['userID','age','gender','occupation','zipco
 
 NbUsers = len(User)
 NbItems= len(Item)
-m=NbUsers # PAS SUR A 100% DE NE PAS AVOIR INVERSER
-n=NbItems
+
 Rtest = np.zeros((NbUsers, NbItems))
 R = np.zeros((NbUsers, NbItems))
 W = np.zeros((NbUsers, NbItems))
@@ -158,7 +157,26 @@ def prediction_moindrecarre(R, W, Rtest, nbrIter = 10 ,nbrFeatures = 1 ,lmbd = 0
         
     return score
 
+#meilleurs résultats k=2 nbriter=7 (apres diverge) et simulation par 111
+
 score=[]
+
+for k in range(1,5):
+    print("approximation 1 avec k = ", k)
+    newscore1,temps=time_elapsed(prediction_moindrecarre,R,W,Rtest,mean_items=1,nbrFeatures=k)  
+    print("score = {} en {} secondes".format(newscore1[9],temps))
+    print()
+    print("approximation moyenne avec k = ", k)
+    newscore2,temps=time_elapsed(prediction_moindrecarre,R,W,Rtest,mean_items=mean_items,nbrFeatures=k)
+    print("score = {} en {} secondes".format(newscore2[9],temps))
+    print()
+    print("approximation random avec k = ", k)
+    newscore3,temps=time_elapsed(prediction_moindrecarre,R,W,Rtest,nbrFeatures=k)
+    print("score = {} en {} secondes".format(newscore3[9],temps))
+
+    score.append((newscore1,newscore2,newscore3))
+
+"""
 for l in range(1,10) :   
     lmbd=l*0.01
     print(lmbd)
@@ -176,7 +194,7 @@ for l in range(1,10) :
     print(newscore3[9])        
     score.append((newscore1,newscore2,newscore3))
 
-"""
+
 #approximation de X et Y par la moyenne
 #fonctionne moins bien meilleur départ mais cnvergence moins bonne HYPOTHESE (nameliore rien)=> apparemment il ya des 0 dans Y : des films nont pas été notés !!! je vais essayer de remplacer ces zeros par des 1
 
